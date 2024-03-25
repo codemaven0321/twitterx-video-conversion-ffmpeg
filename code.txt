@@ -1,0 +1,30 @@
+ffmpeg -f lavfi -i color=c=black:s=1280x720:d=10 -i smaller_video.mp4 -filter_complex "\
+[0:v][1:v]overlay=main_w-overlay_w-10:main_h-overlay_h-10[video]; \
+[video]drawtext=text='Your Text':x=800:y=30:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5, \
+drawtext=text='Your Name':x=800:y=60:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5, \
+drawtext=text='Your Position':x=800:y=90:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5 \
+[v]" \
+-map "[v]" -map 1:a -c:v libx264 -c:a copy output.mp4
+
+#step 1
+ffmpeg -i input.mp4 -vf "scale=406:720" -c:v libx264 -c:a copy scaled_video.mp4
+#step 2
+ffmpeg -i scaled_video.mp4 -filter_complex "color=black:s=1280x720 [base]; [base][0] overlay=(1280-406)/2:(720-720)/2" -shortest overlayed_video.mp4
+#step 3
+ffmpeg -i overlayed_video.mp4 -i avatar.jpeg -filter_complex "[1:v]scale=100:100,format=rgba,colorchannelmixer=aa=0.8,geq=r='r(X,Y)':a='0.8*alpha(X,Y)'[image];[0:v][image]overlay= 40:40[out]" -map "[out]" -map 0:a avatar_video.mp4
+#ffmpeg -i overlayed_video.mp4 -i avatar.jpeg -filter_complex "[1:v]scale=100:100,format=rgba,colorchannelmixer=aa=0.5,geq=r='r(X,Y)':a='0.5*alpha(X,Y)',split[m][a];[m][a]alphamerge,frei0r=luma_key[color];[0:v][color]overlay=20:20:eof_action=pass[out]" -map "[out]" -map 0:a output_video.mp4
+#ffmpeg -i overlayed_video.mp4 -i avatar.jpeg -filter_complex "[1:v]scale=100:100,format=rgba,colorchannelmixer=aa=0.5,geq=r='r(X,Y)':a='0.5*alpha(X,Y)',split[m][a];[a]format=gray,colorchannelmixer=aa=0.5[amask];[m][amask]alphamerge,geq=r='r(X,Y)*alpha(Y,X)':a='alpha(Y,X)'[image];[0:v][image]overlay=20:20[out]" -map "[out]" -map 0:a output_video.mp4
+
+#step 4
+ffmpeg -i avatar_video.mp4 -i twitter_x_logo.png -filter_complex "[1:v]scale=100:100[logo];[0:v][logo]overlay=W-w-40:H-h-40[out]" -map "[out]" -map 0:a logo_video.mp4
+
+#step 5
+ffmpeg -i logo_video.mp4 -vf "drawtext=text='Jamies Winston':x=40:y=250:fontsize=42:fontcolor=white:box=1:boxcolor=black@0.5:fontfile=timesbi.ttf, drawtext=text='officially signed with':x=40:y=310:fontsize=42:fontcolor=white:box=1:boxcolor=black@0.5:fontfile=timesbi.ttf, drawtext=text='the #Browns today.':x=40:y=370:fontsize=42:fontcolor=white:box=1:boxcolor=black@0.5:fontfile=timesbi.ttf, drawtext=text='He is already working':x=40:y=430:fontsize=42:fontcolor=white:box=1:boxcolor=black@0.5:fontfile=timesbi.ttf, drawtext=text='with his center':x=40:y=490:fontsize=42:fontcolor=white:box=1:boxcolor=black@0.5:fontfile=timesbi.ttf" -map 0:v -map 0:a text_video.mp4
+
+#step 6
+
+
+ffmpeg -i text_video.mp4 -vf "drawtext=text='ahsanaftab3':x=40:y=170:fontsize=30:fontcolor=white@0.7:box=1:boxcolor=black@0.5:fontfile=arial.ttf" -map 0:v -map 0:a name_video.mp4
+
+#step 7
+ffmpeg -i name_video.mp4 -c:v copy -c:a ac3 -b:a 256k output_video.mp4
